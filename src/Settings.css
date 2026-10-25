@@ -857,6 +857,35 @@ input:checked + .slider:before {
 	color: var(--text-muted);
 }
 
+.accent-presets {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 7px;
+}
+
+.accent-swatch {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.18);
+	padding: 0;
+	cursor: pointer;
+	transition:
+		transform 0.12s ease,
+		box-shadow 0.12s ease,
+		border-color 0.12s ease;
+}
+
+.accent-swatch:hover {
+	transform: scale(1.12);
+}
+
+.accent-swatch.active {
+	border-color: #fff;
+	box-shadow: 0 0 0 2px var(--bloom-accent, #0a84ff);
+}
+
 /* About tab container and header */
 @font-face {
 	font-family: "Syne";

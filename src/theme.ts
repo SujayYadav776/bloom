@@ -256,6 +256,20 @@ const THEME_DEFAULTS: Record<string, string> = {
 	"bloom-theme-brightness": "0.15"
 };
 
+// Curated one-click accents for the Appearance settings. Each hex is chosen to
+// read well as a translucent theme background once saturation/brightness are
+// derived from it in applyTheme()'s custom branch.
+export const ACCENT_PRESETS: ReadonlyArray<{ name: string; hex: string }> = [
+	{ name: "Ocean", hex: "#0a84ff" },
+	{ name: "Grape", hex: "#bf5af2" },
+	{ name: "Flamingo", hex: "#ff375f" },
+	{ name: "Sunset", hex: "#ff9f0a" },
+	{ name: "Meadow", hex: "#30d158" },
+	{ name: "Lagoon", hex: "#40c8e0" },
+	{ name: "Iris", hex: "#5e5ce6" },
+	{ name: "Ember", hex: "#ff453a" }
+];
+
 export function initTheme() {
 	const changedKeys = new Set<string>();
 	const values = Object.fromEntries(

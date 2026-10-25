@@ -1,11 +1,13 @@
-import { Palette, Droplet, Contrast, Droplets, Sun, Square, Maximize2 } from "lucide-react";
+import { Palette, Droplet, Contrast, Droplets, Sun, Square, Maximize2, Sparkles } from "lucide-react";
 import { SettingRow } from "./SettingRow";
+import { ACCENT_PRESETS } from "../theme";
 
 interface AppearanceTabProps {
 	themeMode: string;
 	handleThemeModeChange: (mode: string) => void;
 	themeColor: string;
 	handleThemeColorChange: (color: string) => void;
+	applyAccentPreset: (hex: string) => void;
 	themeOpacity: number;
 	handleOpacityChange: (val: number) => void;
 	themeSaturation: number;
@@ -23,6 +25,7 @@ export function AppearanceTab({
 	handleThemeModeChange,
 	themeColor,
 	handleThemeColorChange,
+	applyAccentPreset,
 	themeOpacity,
 	handleOpacityChange,
 	themeSaturation,
@@ -52,6 +55,32 @@ export function AppearanceTab({
 						<option value="custom">Custom Color</option>
 						<option value="adaptive">Adaptive Accent</option>
 					</select>
+				</SettingRow>
+
+				<SettingRow
+					icon={Sparkles}
+					label="Accent Presets"
+					desc="One-click colors, applied instantly"
+					divider={showCustomColor}
+				>
+					<div className="accent-presets">
+						{ACCENT_PRESETS.map((preset) => (
+							<button
+								key={preset.hex}
+								type="button"
+								className={`accent-swatch ${
+									themeMode === "custom" &&
+									themeColor.toLowerCase() === preset.hex.toLowerCase()
+										? "active"
+										: ""
+								}`}
+								style={{ background: preset.hex }}
+								aria-label={preset.name}
+								title={preset.name}
+								onClick={() => applyAccentPreset(preset.hex)}
+							/>
+						))}
+					</div>
 				</SettingRow>
 
 				{showCustomColor && (

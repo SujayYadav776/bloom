@@ -154,6 +154,7 @@ function SettingsApp() {
 							handleThemeModeChange={settings.handleThemeModeChange}
 							themeColor={settings.themeColor}
 							handleThemeColorChange={settings.handleThemeColorChange}
+							applyAccentPreset={settings.applyAccentPreset}
 							themeOpacity={settings.themeOpacity}
 							handleOpacityChange={settings.handleOpacityChange}
 							themeSaturation={settings.themeSaturation}

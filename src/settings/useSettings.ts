@@ -807,6 +807,14 @@ export function useSettings() {
 		}
 	};
 
+	// One-click accent preset: force Custom mode, then apply the color so the
+	// saturation/brightness are derived from the preset (same path as the picker).
+	const applyAccentPreset = (color: string) => {
+		setThemeMode("custom");
+		saveSetting("bloom-theme-mode", "custom");
+		handleThemeColorChange(color);
+	};
+
 	const handleOpacityChange = (value: number) => {
 		setThemeOpacity(value);
 		saveSetting("bloom-theme-opacity", String(value));
@@ -946,6 +954,7 @@ export function useSettings() {
 		handleThemeModeChange,
 		themeColor,
 		handleThemeColorChange,
+		applyAccentPreset,
 		themeOpacity,
 		handleOpacityChange,
 		themeSaturation,
