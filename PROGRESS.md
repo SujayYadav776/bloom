@@ -27,7 +27,9 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 
 ## Build & ship
 
-- [~] Full Windows installer via `tauri build`
+- [x] Dependencies installed faithfully via `bun install --frozen-lockfile` (matches `Cargo.lock`)
+- [x] Full Windows installer built: `tauri build --bundles nsis` → `bloom_3.10.1_x64-setup.exe`
+- [x] Local-only override `tauri.build-local.json` disables updater signing for local builds (kept out of git)
 - [ ] Ongoing: keep upstream synced via merge commits
 
 ## Planned ideas (not started)
