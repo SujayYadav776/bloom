@@ -53,7 +53,8 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Inbox,
-	Music
+	Music,
+	StickyNote
 } from "lucide-react";
 
 /**
@@ -66,8 +67,8 @@ import {
  *   Dragging files onto the notch also opens the shelf. Wheel/swipe switches
  *   between tool panels, including when a live activity occupies the pill.
  */
-type NotchPanel = "calendar" | "command-center";
-const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center"];
+type NotchPanel = "calendar" | "command-center" | "scratchpad";
+const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "scratchpad"];
 const asNotchPanel = (value: unknown): NotchPanel | null =>
 	NOTCH_PANELS.includes(value as NotchPanel) ? (value as NotchPanel) : null;
 
@@ -437,7 +438,8 @@ type BloomMode =
 	| "status"
 	| "shelf"
 	| "wifi"
-	| "bluetooth";
+	| "bluetooth"
+	| "scratchpad";
 
 // The shelf is a short-lived stash: one row, newest first, oldest evicted.
 const SHELF_MAX_ITEMS = 10;
@@ -1794,6 +1796,17 @@ function App() {
 	const timerIntervalRef = useRef<any>(null);
 	const prevTimerFinishedRef = useRef(false);
 
+	// Scratchpad: a lightweight local quick-notes panel. Persisted to
+	// localStorage like other transient notch state (independent of the Rust
+	// settings store, since it is free-form text edited live in the notch).
+	const [scratchpad, setScratchpad] = useState<string>(
+		() => localStorage.getItem("bloom-scratchpad") ?? ""
+	);
+	const handleScratchpadChange = (value: string) => {
+		setScratchpad(value);
+		localStorage.setItem("bloom-scratchpad", value);
+	};
+
 	const formatTimerTime = (totalSeconds: number) => {
 		const mins = Math.floor(Math.abs(totalSeconds) / 60);
 		const secs = Math.abs(totalSeconds) % 60;
@@ -2716,6 +2729,7 @@ function App() {
 		if (isCalendarMode) return 480;
 		if (bloomMode === "shelf") return 380;
 		if (bloomMode === "command-center" && isOpen) return 350;
+		if (bloomMode === "scratchpad" && isOpen) return 360;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 350;
 		if (showMusicOnStatusHover) {
 			return 170 + (settingsVisualizerEnabled ? 30 : 0);
@@ -2754,6 +2768,7 @@ function App() {
 			return shelfOverflowing ? 190 : 176;
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
+		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
@@ -3800,6 +3815,46 @@ function App() {
 													Learn more
 												</button>
 											)}
+										</motion.div>
+									)}
+								</AnimatePresence>
+
+								{/* Scratchpad Panel */}
+								<AnimatePresence>
+									{bloomMode === "scratchpad" && (
+										<motion.div
+											className="scratchpad-content"
+											onClick={(e) => e.stopPropagation()}
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } }}
+											transition={{ type: "spring", stiffness: 400, damping: 30 }}
+										>
+											<div className="scratchpad-header">
+												<span className="scratchpad-title">
+													<StickyNote size={13} strokeWidth={2} />
+													Scratchpad
+												</span>
+												<button
+													className="scratchpad-clear"
+													aria-label="Clear scratchpad"
+													title="Clear"
+													onClick={(e) => {
+														e.stopPropagation();
+														handleScratchpadChange("");
+													}}
+												>
+													<RotateCcw size={13} strokeWidth={2} />
+												</button>
+											</div>
+											<textarea
+												className="scratchpad-input"
+												placeholder="Jot something down…"
+												value={scratchpad}
+												onChange={(e) => handleScratchpadChange(e.target.value)}
+												onClick={(e) => e.stopPropagation()}
+												onMouseDown={(e) => e.stopPropagation()}
+											/>
 										</motion.div>
 									)}
 								</AnimatePresence>
