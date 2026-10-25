@@ -1504,7 +1504,9 @@ function App() {
 			prev === "status" ||
 			prev === "shelf" ||
 			prev === "wifi" ||
-			prev === "bluetooth"
+			prev === "bluetooth" ||
+			prev === "scratchpad" ||
+			prev === "wallpaper"
 				? restingModeRef.current
 				: prev
 		);
