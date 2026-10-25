@@ -54,7 +54,8 @@ import {
 	ChevronRight,
 	Inbox,
 	Music,
-	StickyNote
+	StickyNote,
+	Image as ImageIcon
 } from "lucide-react";
 
 /**
@@ -67,8 +68,8 @@ import {
  *   Dragging files onto the notch also opens the shelf. Wheel/swipe switches
  *   between tool panels, including when a live activity occupies the pill.
  */
-type NotchPanel = "calendar" | "command-center" | "scratchpad";
-const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "scratchpad"];
+type NotchPanel = "calendar" | "command-center" | "scratchpad" | "wallpaper";
+const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "scratchpad", "wallpaper"];
 const asNotchPanel = (value: unknown): NotchPanel | null =>
 	NOTCH_PANELS.includes(value as NotchPanel) ? (value as NotchPanel) : null;
 
@@ -439,7 +440,8 @@ type BloomMode =
 	| "shelf"
 	| "wifi"
 	| "bluetooth"
-	| "scratchpad";
+	| "scratchpad"
+	| "wallpaper";
 
 // The shelf is a short-lived stash: one row, newest first, oldest evicted.
 const SHELF_MAX_ITEMS = 10;
@@ -1807,6 +1809,34 @@ function App() {
 		localStorage.setItem("bloom-scratchpad", value);
 	};
 
+	// Wallpaper panel: lazily scans several Windows locations for thumbnails and
+	// lets the user set the desktop wallpaper. Thumbnails come back as base64
+	// data URLs so they render under the existing CSP.
+	type WallpaperItem = { name: string; path: string; dataUrl: string };
+	const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
+	const [wallpapersLoading, setWallpapersLoading] = useState(false);
+	const [currentWallpaper, setCurrentWallpaper] = useState("");
+	const wallpapersLoadedRef = useRef(false);
+
+	useEffect(() => {
+		if (bloomMode !== "wallpaper" || wallpapersLoadedRef.current) return;
+		wallpapersLoadedRef.current = true;
+		setWallpapersLoading(true);
+		invoke<WallpaperItem[]>("get_wallpaper_thumbnails")
+			.then((list) => setWallpapers(list ?? []))
+			.catch((e) => console.warn("get_wallpaper_thumbnails:", e))
+			.finally(() => setWallpapersLoading(false));
+		invoke<string | null>("get_current_wallpaper")
+			.then((p) => setCurrentWallpaper(p ?? ""))
+			.catch(() => {});
+	}, [bloomMode]);
+
+	const applyWallpaper = (path: string) => {
+		invoke("set_wallpaper", { path })
+			.then(() => setCurrentWallpaper(path))
+			.catch((e) => console.warn("set_wallpaper:", e));
+	};
+
 	const formatTimerTime = (totalSeconds: number) => {
 		const mins = Math.floor(Math.abs(totalSeconds) / 60);
 		const secs = Math.abs(totalSeconds) % 60;
@@ -2730,6 +2760,7 @@ function App() {
 		if (bloomMode === "shelf") return 380;
 		if (bloomMode === "command-center" && isOpen) return 350;
 		if (bloomMode === "scratchpad" && isOpen) return 360;
+		if (bloomMode === "wallpaper" && isOpen) return 360;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 350;
 		if (showMusicOnStatusHover) {
 			return 170 + (settingsVisualizerEnabled ? 30 : 0);
@@ -2769,6 +2800,7 @@ function App() {
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
 		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
+		if (bloomMode === "wallpaper") return isOpen ? 200 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
@@ -3855,6 +3887,51 @@ function App() {
 												onClick={(e) => e.stopPropagation()}
 												onMouseDown={(e) => e.stopPropagation()}
 											/>
+										</motion.div>
+									)}
+								</AnimatePresence>
+
+								{/* Wallpaper Panel */}
+								<AnimatePresence>
+									{bloomMode === "wallpaper" && (
+										<motion.div
+											className="wallpaper-content"
+											onClick={(e) => e.stopPropagation()}
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+											exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } }}
+											transition={{ type: "spring", stiffness: 400, damping: 30 }}
+										>
+											<div className="wallpaper-header">
+												<span className="wallpaper-title">
+													<ImageIcon size={13} strokeWidth={2} />
+													Wallpaper
+												</span>
+											</div>
+											{wallpapersLoading ? (
+												<div className="wallpaper-empty">Scanning wallpapers…</div>
+											) : wallpapers.length === 0 ? (
+												<div className="wallpaper-empty">No wallpapers found</div>
+											) : (
+												<div className="wallpaper-grid">
+													{wallpapers.map((wp) => (
+														<button
+															key={wp.path}
+															type="button"
+															className={`wallpaper-thumb ${
+																currentWallpaper === wp.path ? "active" : ""
+															}`}
+															title={wp.name}
+															onClick={(e) => {
+																e.stopPropagation();
+																applyWallpaper(wp.path);
+															}}
+														>
+															<img src={wp.dataUrl} alt={wp.name} draggable={false} />
+														</button>
+													))}
+												</div>
+											)}
 										</motion.div>
 									)}
 								</AnimatePresence>

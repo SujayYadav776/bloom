@@ -2465,3 +2465,92 @@ img {
 	background: var(--bloom-scrollbar-thumb, rgba(255, 255, 255, 0.1));
 	border-radius: 3px;
 }
+
+/* ── Wallpaper notch panel ──────────────────────────────────────────── */
+.wallpaper-content {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	padding: 10px 12px 12px;
+	box-sizing: border-box;
+	gap: 8px;
+}
+
+.wallpaper-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.wallpaper-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--bloom-text, #fff);
+	opacity: 0.85;
+}
+
+.wallpaper-empty {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	color: var(--bloom-text-muted, rgba(255, 255, 255, 0.6));
+}
+
+.wallpaper-grid {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	gap: 8px;
+	overflow-y: auto;
+	padding: 2px;
+}
+
+.wallpaper-grid::-webkit-scrollbar {
+	width: 6px;
+}
+
+.wallpaper-grid::-webkit-scrollbar-thumb {
+	background: var(--bloom-scrollbar-thumb, rgba(255, 255, 255, 0.1));
+	border-radius: 3px;
+}
+
+.wallpaper-thumb {
+	width: 104px;
+	height: 58px;
+	flex: 0 0 auto;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid var(--bloom-border, rgba(255, 255, 255, 0.12));
+	border-radius: 8px;
+	background: var(--bloom-group-bg, rgba(255, 255, 255, 0.04));
+	cursor: pointer;
+	transition:
+		transform 0.12s ease,
+		box-shadow 0.12s ease,
+		border-color 0.12s ease;
+}
+
+.wallpaper-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.wallpaper-thumb:hover {
+	transform: scale(1.06);
+	border-color: var(--bloom-accent, #0a84ff);
+}
+
+.wallpaper-thumb.active {
+	border-color: #fff;
+	box-shadow: 0 0 0 2px var(--bloom-accent, #0a84ff);
+}

@@ -15,6 +15,7 @@ mod updater;
 mod utils;
 mod wifi;
 mod window_region;
+mod wallpaper;
 
 use std::sync::atomic::Ordering;
 use tauri::Manager;
@@ -193,6 +194,9 @@ fn main() {
             get_ram_usage,
             get_disk_space,
             get_network_speed,
+            wallpaper::get_wallpaper_thumbnails,
+            wallpaper::set_wallpaper,
+            wallpaper::get_current_wallpaper,
             export_settings_to_file,
             import_settings_from_file,
             reset_settings,
