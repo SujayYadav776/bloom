@@ -1,3 +1,7 @@
+> **Fork notice.** This is a personal fork of [SehajveerSingh2005/bloom](https://github.com/SehajveerSingh2005/bloom),
+> distributed under the original **GPL-3.0-only** license with upstream copyright preserved.
+> Local enhancements are tracked in [`PROGRESS.md`](./PROGRESS.md). See [`FORK.md`](./FORK.md) for the list of changes.
+
 <div align="center">
 
 <img 
