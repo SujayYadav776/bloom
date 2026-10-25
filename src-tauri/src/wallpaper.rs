@@ -111,7 +111,7 @@ fn thumbnail_data_url(path: &Path) -> Option<String> {
 	let img = image::load_from_memory(&bytes).ok()?;
 	let (w, _) = img.dimensions();
 	let scaled = if w > THUMB_WIDTH {
-		img.resize_to_width(THUMB_WIDTH, FilterType::Lanczos3)
+		img.resize(THUMB_WIDTH, THUMB_WIDTH, FilterType::Lanczos3)
 	} else {
 		img
 	};
@@ -150,7 +150,7 @@ pub fn set_wallpaper(path: String) -> Result<(), String> {
 		SystemParametersInfoW(
 			SPI_SETDESKWALLPAPER,
 			0,
-			wide.as_ptr() as *mut c_void,
+			Some(wide.as_ptr() as *mut c_void),
 			SPIF_UPDATEINIFILE | SPIF_SENDCHANGE,
 		)
 	};
@@ -164,7 +164,7 @@ pub fn get_current_wallpaper() -> Option<String> {
 		SystemParametersInfoW(
 			SPI_GETDESKWALLPAPER,
 			buf.len() as u32,
-			buf.as_mut_ptr() as *mut c_void,
+			Some(buf.as_mut_ptr() as *mut c_void),
 			SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
 		)
 	};
