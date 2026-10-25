@@ -25,6 +25,14 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 - [x] Presets switch theme to Custom and apply color + derived saturation/brightness
 - [x] `tsc && vite build` typecheck passes
 
+## Feature: New notch panel — System Monitor
+
+- [x] Register `system-monitor` as a cycleable `NotchPanel` + `BloomMode`
+- [x] Reuse the existing live CPU/RAM/disk/network metrics (no new Rust commands)
+- [x] Bars for CPU/RAM plus rolling sparkline history; disk-free and net up/down rows
+- [x] Panel body, sizing (width/height), and styling
+- [x] `tsc && vite build` typecheck passes
+
 ## Build & ship
 
 - [x] Dependencies installed faithfully via `bun install --frozen-lockfile` (matches `Cargo.lock`)
@@ -34,6 +42,6 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 
 ## Planned ideas (not started)
 
-- [ ] Additional notch panels (e.g. system monitor, unit converter)
+- [ ] Additional notch panels (e.g. unit converter, world clock)
 - [ ] Dock-side custom widget
 - [ ] Per-monitor theme memory
