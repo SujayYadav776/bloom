@@ -1837,6 +1837,25 @@ function App() {
 			.catch((e) => console.warn("set_wallpaper:", e));
 	};
 
+	// Horizontal strip: explicit page buttons + wheel-to-horizontal-scroll.
+	const wallpaperStripRef = useRef<HTMLDivElement>(null);
+	const scrollWallpaper = (dir: 1 | -1) => {
+		const el = wallpaperStripRef.current;
+		if (!el) return;
+		el.scrollBy({ left: dir * Math.max(140, el.clientWidth * 0.8), behavior: "smooth" });
+	};
+	const handleWallpaperWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+		const el = wallpaperStripRef.current;
+		if (!el) return;
+		const max = el.scrollWidth - el.clientWidth;
+		if (max > 0) {
+			const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? el.clientWidth : 1;
+			el.scrollLeft += (e.deltaY + e.deltaX) * unit;
+		}
+		// Keep the wheel over the strip from cycling notch panels.
+		e.stopPropagation();
+	};
+
 	const formatTimerTime = (totalSeconds: number) => {
 		const mins = Math.floor(Math.abs(totalSeconds) / 60);
 		const secs = Math.abs(totalSeconds) % 60;
@@ -2800,7 +2819,7 @@ function App() {
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
 		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
-		if (bloomMode === "wallpaper") return isOpen ? 200 : 36;
+		if (bloomMode === "wallpaper") return isOpen ? 150 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
@@ -3907,29 +3926,60 @@ function App() {
 													<ImageIcon size={13} strokeWidth={2} />
 													Wallpaper
 												</span>
+												{!wallpapersLoading && wallpapers.length > 0 && (
+													<span className="wallpaper-count">{wallpapers.length}</span>
+												)}
 											</div>
 											{wallpapersLoading ? (
 												<div className="wallpaper-empty">Scanning wallpapers…</div>
 											) : wallpapers.length === 0 ? (
 												<div className="wallpaper-empty">No wallpapers found</div>
 											) : (
-												<div className="wallpaper-grid">
-													{wallpapers.map((wp) => (
-														<button
-															key={wp.path}
-															type="button"
-															className={`wallpaper-thumb ${
-																currentWallpaper === wp.path ? "active" : ""
-															}`}
-															title={wp.name}
-															onClick={(e) => {
-																e.stopPropagation();
-																applyWallpaper(wp.path);
-															}}
-														>
-															<img src={wp.dataUrl} alt={wp.name} draggable={false} />
-														</button>
-													))}
+												<div className="wallpaper-viewport">
+													<button
+														type="button"
+														className="wallpaper-page"
+														aria-label="Previous wallpapers"
+														onClick={(e) => {
+															e.stopPropagation();
+															scrollWallpaper(-1);
+														}}
+													>
+														<ChevronLeft size={16} strokeWidth={2.2} />
+													</button>
+													<div
+														className="wallpaper-strip"
+														ref={wallpaperStripRef}
+														onWheel={handleWallpaperWheel}
+													>
+														{wallpapers.map((wp) => (
+															<button
+																key={wp.path}
+																type="button"
+																className={`wallpaper-thumb ${
+																	currentWallpaper === wp.path ? "active" : ""
+																}`}
+																title={wp.name}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	applyWallpaper(wp.path);
+																}}
+															>
+																<img src={wp.dataUrl} alt={wp.name} draggable={false} />
+															</button>
+														))}
+													</div>
+													<button
+														type="button"
+														className="wallpaper-page"
+														aria-label="Next wallpapers"
+														onClick={(e) => {
+															e.stopPropagation();
+															scrollWallpaper(1);
+														}}
+													>
+														<ChevronRight size={16} strokeWidth={2.2} />
+													</button>
 												</div>
 											)}
 										</motion.div>
