@@ -2819,7 +2819,7 @@ function App() {
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
 		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
-		if (bloomMode === "wallpaper") return isOpen ? 150 : 36;
+		if (bloomMode === "wallpaper") return isOpen ? 190 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
