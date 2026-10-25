@@ -54,8 +54,7 @@ import {
 	ChevronRight,
 	Inbox,
 	Music,
-	StickyNote,
-	Activity
+	StickyNote
 } from "lucide-react";
 
 /**
@@ -68,8 +67,8 @@ import {
  *   Dragging files onto the notch also opens the shelf. Wheel/swipe switches
  *   between tool panels, including when a live activity occupies the pill.
  */
-type NotchPanel = "calendar" | "command-center" | "scratchpad" | "system-monitor";
-const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "scratchpad", "system-monitor"];
+type NotchPanel = "calendar" | "command-center" | "scratchpad";
+const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "scratchpad"];
 const asNotchPanel = (value: unknown): NotchPanel | null =>
 	NOTCH_PANELS.includes(value as NotchPanel) ? (value as NotchPanel) : null;
 
@@ -440,8 +439,7 @@ type BloomMode =
 	| "shelf"
 	| "wifi"
 	| "bluetooth"
-	| "scratchpad"
-	| "system-monitor";
+	| "scratchpad";
 
 // The shelf is a short-lived stash: one row, newest first, oldest evicted.
 const SHELF_MAX_ITEMS = 10;
@@ -495,36 +493,6 @@ const TitleMarquee = ({ title }: { title: string }) => {
 				{title}
 			</span>
 		</div>
-	);
-};
-
-// A tiny 0-100 history line chart for the System Monitor panel.
-const Sparkline = ({
-	data,
-	width = 120,
-	height = 28,
-	stroke = "var(--bloom-accent, #0a84ff)"
-}: {
-	data: number[];
-	width?: number;
-	height?: number;
-	stroke?: string;
-}) => {
-	if (data.length < 2) {
-		return <svg className="sysmon-spark" width={width} height={height} />;
-	}
-	const step = width / (data.length - 1);
-	const points = data
-		.map((v, i) => {
-			const clamped = Math.max(0, Math.min(100, v));
-			const y = height - (clamped / 100) * (height - 4) - 2;
-			return `${(i * step).toFixed(1)},${y.toFixed(1)}`;
-		})
-		.join(" ");
-	return (
-		<svg className="sysmon-spark" width={width} height={height}>
-			<polyline points={points} fill="none" stroke={stroke} strokeWidth={1.5} />
-		</svg>
 	);
 };
 
@@ -650,9 +618,6 @@ function App() {
 	const [diskSpace, setDiskSpace] = useState(0);
 	const [netUpSpeed, setNetUpSpeed] = useState(0);
 	const [netDownSpeed, setNetDownSpeed] = useState(0);
-	// Rolling history (newest last) for the System Monitor sparklines.
-	const [cpuHistory, setCpuHistory] = useState<number[]>([]);
-	const [ramHistory, setRamHistory] = useState<number[]>([]);
 	const [statusWidgets, setStatusWidgets] = useState<WidgetConfig>({
 		left: ["weather"],
 		right: ["battery"]
@@ -2283,14 +2248,6 @@ function App() {
 		return () => clearInterval(interval);
 	}, []);
 
-	// Record rolling history for the System Monitor sparklines (newest last, cap 40).
-	useEffect(() => {
-		setCpuHistory((h) => [...h, cpuUsage].slice(-40));
-	}, [cpuUsage]);
-	useEffect(() => {
-		setRamHistory((h) => [...h, ramUsage].slice(-40));
-	}, [ramUsage]);
-
 	// Listen for brightness changes
 	useEffect(() => {
 		const unlisten = listen<{ brightness: number }>("brightness-change", (event) => {
@@ -2773,7 +2730,6 @@ function App() {
 		if (bloomMode === "shelf") return 380;
 		if (bloomMode === "command-center" && isOpen) return 350;
 		if (bloomMode === "scratchpad" && isOpen) return 360;
-		if (bloomMode === "system-monitor" && isOpen) return 360;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 350;
 		if (showMusicOnStatusHover) {
 			return 170 + (settingsVisualizerEnabled ? 30 : 0);
@@ -2813,7 +2769,6 @@ function App() {
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
 		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
-		if (bloomMode === "system-monitor") return isOpen ? 232 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
@@ -3900,77 +3855,6 @@ function App() {
 												onClick={(e) => e.stopPropagation()}
 												onMouseDown={(e) => e.stopPropagation()}
 											/>
-										</motion.div>
-									)}
-								</AnimatePresence>
-
-								{/* System Monitor Panel */}
-								<AnimatePresence>
-									{bloomMode === "system-monitor" && (
-										<motion.div
-											className="sysmon-content"
-											onClick={(e) => e.stopPropagation()}
-											initial={{ opacity: 0 }}
-											animate={{ opacity: 1 }}
-											exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } }}
-											transition={{ type: "spring", stiffness: 400, damping: 30 }}
-										>
-											<div className="sysmon-header">
-												<span className="sysmon-title">
-													<Activity size={13} strokeWidth={2} />
-													System Monitor
-												</span>
-											</div>
-											<div className="sysmon-grid">
-												<div className="sysmon-metric">
-													<div className="sysmon-metric-top">
-														<span className="sysmon-metric-label">
-															<Cpu size={12} strokeWidth={2} />
-															CPU
-														</span>
-														<span className="sysmon-metric-value">{Math.round(cpuUsage)}%</span>
-													</div>
-													<div className="sysmon-bar">
-														<div
-															className="sysmon-bar-fill"
-															style={{ width: `${Math.min(100, Math.max(0, cpuUsage))}%` }}
-														/>
-													</div>
-													<Sparkline data={cpuHistory} />
-												</div>
-												<div className="sysmon-metric">
-													<div className="sysmon-metric-top">
-														<span className="sysmon-metric-label">
-															<MemoryStick size={12} strokeWidth={2} />
-															Memory
-														</span>
-														<span className="sysmon-metric-value">{Math.round(ramUsage)}%</span>
-													</div>
-													<div className="sysmon-bar">
-														<div
-															className="sysmon-bar-fill"
-															style={{ width: `${Math.min(100, Math.max(0, ramUsage))}%` }}
-														/>
-													</div>
-													<Sparkline data={ramHistory} />
-												</div>
-												<div className="sysmon-row">
-													<span className="sysmon-metric-label">
-														<HardDrive size={12} strokeWidth={2} />
-														Disk
-													</span>
-													<span className="sysmon-metric-value">{Math.round(diskSpace)}GB free</span>
-												</div>
-												<div className="sysmon-row">
-													<span className="sysmon-metric-label">
-														<ArrowUpDown size={12} strokeWidth={2} />
-														Network
-													</span>
-													<span className="sysmon-metric-value">
-														↑{formatBytes(netUpSpeed)}/s · ↓{formatBytes(netDownSpeed)}/s
-													</span>
-												</div>
-											</div>
 										</motion.div>
 									)}
 								</AnimatePresence>
