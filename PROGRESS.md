@@ -12,12 +12,11 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 - [x] Upstream remotes wired (`origin` = SujayYadav776/bloom, `upstream` = SehajveerSingh2005/bloom)
 - [x] GPL-3.0 license and upstream attribution retained
 
-## Feature: New notch panel — Scratchpad quick notes
+## Feature: Scratchpad quick notes — REMOVED
 
-- [x] Register `scratchpad` as a cycleable `NotchPanel` + `BloomMode`
-- [x] Add panel state, text persistence, and clear action
-- [x] Panel body, sizing (width/height), and styling
-- [x] `tsc && vite build` typecheck passes
+> Removed at the user's request (superseded by the Wallpaper panel).
+
+- [x] ~~Scratchpad notch panel~~ removed from `App.tsx` / `App.css`
 
 ## Feature: Theme & appearance — accent preset swatches
 

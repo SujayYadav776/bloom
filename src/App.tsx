@@ -55,7 +55,6 @@ import {
 	ChevronRight,
 	Inbox,
 	Music,
-	StickyNote,
 	FolderOpen
 } from "lucide-react";
 
@@ -69,8 +68,8 @@ import {
  *   Dragging files onto the notch also opens the shelf. Wheel/swipe switches
  *   between tool panels, including when a live activity occupies the pill.
  */
-type NotchPanel = "calendar" | "command-center" | "scratchpad" | "wallpaper";
-const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "scratchpad", "wallpaper"];
+type NotchPanel = "calendar" | "command-center" | "wallpaper";
+const NOTCH_PANELS: readonly NotchPanel[] = ["calendar", "command-center", "wallpaper"];
 const asNotchPanel = (value: unknown): NotchPanel | null =>
 	NOTCH_PANELS.includes(value as NotchPanel) ? (value as NotchPanel) : null;
 
@@ -441,7 +440,6 @@ type BloomMode =
 	| "shelf"
 	| "wifi"
 	| "bluetooth"
-	| "scratchpad"
 	| "wallpaper";
 
 // The shelf is a short-lived stash: one row, newest first, oldest evicted.
@@ -1506,7 +1504,6 @@ function App() {
 			prev === "shelf" ||
 			prev === "wifi" ||
 			prev === "bluetooth" ||
-			prev === "scratchpad" ||
 			prev === "wallpaper"
 				? restingModeRef.current
 				: prev
@@ -1800,17 +1797,6 @@ function App() {
 	const timerEditActiveRef = useRef(false);
 	const timerIntervalRef = useRef<any>(null);
 	const prevTimerFinishedRef = useRef(false);
-
-	// Scratchpad: a lightweight local quick-notes panel. Persisted to
-	// localStorage like other transient notch state (independent of the Rust
-	// settings store, since it is free-form text edited live in the notch).
-	const [scratchpad, setScratchpad] = useState<string>(
-		() => localStorage.getItem("bloom-scratchpad") ?? ""
-	);
-	const handleScratchpadChange = (value: string) => {
-		setScratchpad(value);
-		localStorage.setItem("bloom-scratchpad", value);
-	};
 
 	// Wallpaper panel: scans a dedicated user folder (created on demand) for
 	// thumbnails and lets the user set the desktop wallpaper. Thumbnails come
@@ -2805,7 +2791,6 @@ function App() {
 		if (isCalendarMode) return 480;
 		if (bloomMode === "shelf") return 380;
 		if (bloomMode === "command-center" && isOpen) return 350;
-		if (bloomMode === "scratchpad" && isOpen) return 360;
 		if (bloomMode === "wallpaper" && isOpen) return 380;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 350;
 		if (showMusicOnStatusHover) {
@@ -2845,7 +2830,6 @@ function App() {
 			return shelfOverflowing ? 190 : 176;
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
-		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
 		if (bloomMode === "wallpaper") return isOpen ? 240 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
@@ -3893,46 +3877,6 @@ function App() {
 													Learn more
 												</button>
 											)}
-										</motion.div>
-									)}
-								</AnimatePresence>
-
-								{/* Scratchpad Panel */}
-								<AnimatePresence>
-									{bloomMode === "scratchpad" && (
-										<motion.div
-											className="scratchpad-content"
-											onClick={(e) => e.stopPropagation()}
-											initial={{ opacity: 0 }}
-											animate={{ opacity: 1 }}
-											exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } }}
-											transition={{ type: "spring", stiffness: 400, damping: 30 }}
-										>
-											<div className="scratchpad-header">
-												<span className="scratchpad-title">
-													<StickyNote size={13} strokeWidth={2} />
-													Scratchpad
-												</span>
-												<button
-													className="scratchpad-clear"
-													aria-label="Clear scratchpad"
-													title="Clear"
-													onClick={(e) => {
-														e.stopPropagation();
-														handleScratchpadChange("");
-													}}
-												>
-													<RotateCcw size={13} strokeWidth={2} />
-												</button>
-											</div>
-											<textarea
-												className="scratchpad-input"
-												placeholder="Jot something down…"
-												value={scratchpad}
-												onChange={(e) => handleScratchpadChange(e.target.value)}
-												onClick={(e) => e.stopPropagation()}
-												onMouseDown={(e) => e.stopPropagation()}
-											/>
 										</motion.div>
 									)}
 								</AnimatePresence>
