@@ -2566,6 +2566,31 @@ img {
 	height: 100%;
 }
 
+.wallpaper-viewport::before,
+.wallpaper-viewport::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 46px;
+	z-index: 3;
+	pointer-events: none;
+	backdrop-filter: blur(7px);
+	-webkit-backdrop-filter: blur(7px);
+}
+
+.wallpaper-viewport::before {
+	left: 0;
+	-webkit-mask-image: linear-gradient(to right, #000 25%, transparent);
+	mask-image: linear-gradient(to right, #000 25%, transparent);
+}
+
+.wallpaper-viewport::after {
+	right: 0;
+	-webkit-mask-image: linear-gradient(to left, #000 25%, transparent);
+	mask-image: linear-gradient(to left, #000 25%, transparent);
+}
+
 .wallpaper-strip {
 	display: flex;
 	width: 100%;
@@ -2644,8 +2669,8 @@ img {
 
 .wallpaper-thumb {
 	position: relative;
-	flex: 0 0 calc(100% - 8px);
-	width: calc(100% - 8px);
+	flex: 0 0 80%;
+	width: 80%;
 	height: 100%;
 	scroll-snap-align: center;
 	padding: 0;
