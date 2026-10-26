@@ -22,9 +22,3 @@ select,
 * {
 	font-family: "Heming", "Segoe UI", system-ui, sans-serif !important;
 }
-
-/* Slightly larger text everywhere (the app scales via zoom; window geometry is
- * computed from window.innerWidth, which zoom does not change). */
-body {
-	zoom: 1.05;
-}
