@@ -2476,6 +2476,36 @@ fn top_edge_dwell_ms(app_handle: &AppHandle) -> i64 {
         .clamp(0, 2000)
 }
 
+/// Physical x-range of the notch (padded) used to localize the top-edge reveal
+/// to the notch's own area instead of the whole monitor width. Returns None
+/// until both rects are known (e.g. before first layout), so callers fall back
+/// to full-width behavior. Uses try_lock because this can be reached while the
+/// caller already holds NOTCH_RECT.
+fn notch_top_x_span(scale: f64) -> Option<(i32, i32)> {
+    let (win_pos, _) = MAIN_WINDOW_RECT.try_lock().ok().and_then(|g| *g)?;
+    let r = NOTCH_RECT.try_lock().ok().and_then(|g| *g)?;
+    let rx = win_pos.x + (r.x as f64 * scale) as i32;
+    let rw = (r.width as f64 * scale) as i32;
+    let edge_pad = (60.0 * scale) as i32;
+    Some((rx - edge_pad, rx + rw + edge_pad))
+}
+
+/// Physical y-range of the left/right volume/brightness edge card (a ~196px
+/// tall card vertically centered on the primary monitor, padded), used to
+/// localize the side-edge reveal to the card's section instead of the whole
+/// edge. Returns None when the monitor is unknown, so callers fall back to
+/// full-height behavior.
+fn side_card_y_band(app: &AppHandle) -> Option<(i32, i32)> {
+    let m = app.primary_monitor().ok().flatten()?;
+    let ms = m.size();
+    let mp = m.position();
+    let sc = m.scale_factor() * crate::utils::get_bloom_scale(app);
+    let nh = (196.0 * sc) as i32;
+    let ny = mp.y + (ms.height as i32 / 2) - (nh / 2);
+    let pad = (40.0 * sc) as i32;
+    Some((ny - pad, ny + nh + pad))
+}
+
 /// True when the cursor sits inside the top-edge hot band on the primary
 /// monitor. Shared by the dwell gate and top-edge hit-testing continuity.
 fn in_top_edge_band(cursor: windows::Win32::Foundation::POINT, scale: f64) -> bool {
@@ -2491,9 +2521,13 @@ fn in_top_edge_band(cursor: windows::Win32::Foundation::POINT, scale: f64) -> bo
         .map(|s| s.0 as i32)
         .unwrap_or(1920);
 
-    cursor.y <= (mon_y + (TOP_EDGE_BAND_PX * scale) as i32)
-        && cursor.x >= mon_x
-        && cursor.x <= (mon_x + mon_w)
+    if cursor.y > (mon_y + (TOP_EDGE_BAND_PX * scale) as i32) {
+        return false;
+    }
+    // Only reveal over the notch's own area; fall back to the full width until
+    // the notch rect is known.
+    let (min_x, max_x) = notch_top_x_span(scale).unwrap_or((mon_x, mon_x + mon_w));
+    cursor.x >= min_x && cursor.x <= max_x
 }
 
 /// True once the cursor has stayed inside the top band long enough to count as
@@ -3089,9 +3123,7 @@ fn process_mouse_position(app_handle: &AppHandle, cursor: windows::Win32::Founda
         let cached_pos = MH_CACHED_MON_POS.lock().unwrap().unwrap_or((0, 0));
         let cached_size = MH_CACHED_MON_SIZE.lock().unwrap().unwrap_or((1920, 1080));
         let mon_x = cached_pos.0;
-        let mon_y = cached_pos.1;
         let mon_w = cached_size.0 as i32;
-        let mon_h = cached_size.1 as i32;
 
         let fg_fs = CURRENT_FOREGROUND_FULLSCREEN.load(Ordering::Relaxed);
 
@@ -3110,8 +3142,9 @@ fn process_mouse_position(app_handle: &AppHandle, cursor: windows::Win32::Founda
 
         // --- Left Edge (Volume) ---
         if !fg_fs {
-            let at_left_edge =
-                cursor.x <= (mon_x + 8) && cursor.y >= mon_y && cursor.y <= (mon_y + mon_h);
+            let left_band = side_card_y_band(app_handle);
+            let at_left_edge = cursor.x <= (mon_x + 8)
+                && left_band.map_or(true, |(y0, y1)| cursor.y >= y0 && cursor.y <= y1);
 
             // The collapsed card extends past the 8px edge band, so once the
             // edge hover is established, keep it alive while the cursor is
@@ -3160,8 +3193,9 @@ fn process_mouse_position(app_handle: &AppHandle, cursor: windows::Win32::Founda
 
         // --- Right Edge (Brightness) ---
         if !fg_fs {
-            let at_right_edge =
-                cursor.x >= (mon_x + mon_w - 8) && cursor.y >= mon_y && cursor.y <= (mon_y + mon_h);
+            let right_band = side_card_y_band(app_handle);
+            let at_right_edge = cursor.x >= (mon_x + mon_w - 8)
+                && right_band.map_or(true, |(y0, y1)| cursor.y >= y0 && cursor.y <= y1);
 
             if at_right_edge {
                 MH_RIGHT_EXPIRY_MS.store(now + 500, Ordering::Relaxed);
