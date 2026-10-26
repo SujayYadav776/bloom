@@ -1,0 +1,24 @@
+/* App-wide font: Heming (variable).
+ * Bundled locally so it loads under the app CSP (font-src 'self').
+ * License: see ./assets/fonts/heming-Befonts-License.txt (commercial use allowed).
+ * Imported at the top of each webview stylesheet (App/Dock/Settings/Overlay),
+ * because each Tauri webview is a separate document and needs its own @font-face.
+ */
+@font-face {
+	font-family: "Heming";
+	src: url("./assets/fonts/heming-variable.ttf") format("truetype");
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Use Heming for everything across the app. */
+html,
+body,
+button,
+input,
+textarea,
+select,
+* {
+	font-family: "Heming", "Segoe UI", system-ui, sans-serif !important;
+}
