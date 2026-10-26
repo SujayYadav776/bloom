@@ -2468,13 +2468,11 @@ img {
 
 /* ── Wallpaper notch panel ──────────────────────────────────────────── */
 .wallpaper-content {
-	display: flex;
-	flex-direction: column;
+	position: relative;
 	width: 100%;
 	height: 100%;
-	padding: 10px 12px 12px;
+	padding: 8px;
 	box-sizing: border-box;
-	gap: 8px;
 }
 
 .wallpaper-header {
@@ -2511,10 +2509,14 @@ img {
 
 .wallpaper-empty {
 	display: flex;
-	flex: 1;
+	width: 100%;
+	height: 100%;
 	align-items: center;
 	justify-content: center;
 	font-size: 12px;
+	text-align: center;
+	padding: 0 14px;
+	box-sizing: border-box;
 	color: var(--bloom-text-muted, rgba(255, 255, 255, 0.6));
 }
 
@@ -2559,46 +2561,41 @@ img {
 }
 
 .wallpaper-viewport {
-	display: flex;
-	flex: 1;
-	min-height: 0;
-	align-items: center;
-	gap: 6px;
+	position: relative;
+	width: 100%;
+	height: 100%;
 }
 
 .wallpaper-strip {
 	display: flex;
-	flex: 1;
-	min-width: 0;
+	width: 100%;
+	height: 100%;
 	flex-direction: row;
-	align-items: center;
 	gap: 8px;
 	overflow-x: auto;
 	overflow-y: hidden;
+	scroll-snap-type: x mandatory;
 	scroll-behavior: smooth;
-	padding: 6px 2px;
 }
 
 .wallpaper-strip::-webkit-scrollbar {
-	height: 6px;
-}
-
-.wallpaper-strip::-webkit-scrollbar-thumb {
-	background: var(--bloom-scrollbar-thumb, rgba(255, 255, 255, 0.12));
-	border-radius: 3px;
+	display: none;
 }
 
 .wallpaper-page {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 4;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	flex: 0 0 auto;
-	width: 24px;
-	height: 24px;
+	width: 30px;
+	height: 30px;
 	padding: 0;
-	border: 1px solid var(--bloom-border, rgba(255, 255, 255, 0.12));
+	border: 1px solid var(--bloom-border, rgba(255, 255, 255, 0.18));
 	border-radius: 50%;
-	background: var(--bloom-group-bg, rgba(255, 255, 255, 0.04));
+	background: rgba(0, 0, 0, 0.4);
 	color: var(--bloom-text, #fff);
 	cursor: pointer;
 	transition:
@@ -2606,23 +2603,58 @@ img {
 		border-color 0.12s ease;
 }
 
+.wallpaper-page.prev {
+	left: 12px;
+}
+
+.wallpaper-page.next {
+	right: 12px;
+}
+
 .wallpaper-page:hover {
 	border-color: var(--bloom-accent, #0a84ff);
-	background: var(--bloom-group-bg, rgba(255, 255, 255, 0.1));
+	background: rgba(0, 0, 0, 0.6);
+}
+
+.wallpaper-folder-btn {
+	position: absolute;
+	top: 14px;
+	right: 14px;
+	z-index: 5;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--bloom-border, rgba(255, 255, 255, 0.18));
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.4);
+	color: var(--bloom-text, #fff);
+	cursor: pointer;
+	transition:
+		background 0.12s ease,
+		border-color 0.12s ease;
+}
+
+.wallpaper-folder-btn:hover {
+	border-color: var(--bloom-accent, #0a84ff);
+	background: rgba(0, 0, 0, 0.6);
 }
 
 .wallpaper-thumb {
-	width: 148px;
-	height: 84px;
-	flex: 0 0 auto;
+	position: relative;
+	flex: 0 0 calc(100% - 8px);
+	width: calc(100% - 8px);
+	height: 100%;
+	scroll-snap-align: center;
 	padding: 0;
 	overflow: hidden;
 	border: 1px solid var(--bloom-border, rgba(255, 255, 255, 0.14));
-	border-radius: 8px;
+	border-radius: 12px;
 	background: var(--bloom-group-bg, rgba(255, 255, 255, 0.04));
 	cursor: pointer;
 	transition:
-		transform 0.12s ease,
 		box-shadow 0.12s ease,
 		border-color 0.12s ease;
 }
@@ -2635,7 +2667,6 @@ img {
 }
 
 .wallpaper-thumb:hover {
-	transform: scale(1.05);
 	border-color: var(--bloom-accent, #0a84ff);
 }
 

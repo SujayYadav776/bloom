@@ -56,7 +56,6 @@ import {
 	Inbox,
 	Music,
 	StickyNote,
-	Image as ImageIcon,
 	FolderOpen
 } from "lucide-react";
 
@@ -2807,7 +2806,7 @@ function App() {
 		if (bloomMode === "shelf") return 380;
 		if (bloomMode === "command-center" && isOpen) return 350;
 		if (bloomMode === "scratchpad" && isOpen) return 360;
-		if (bloomMode === "wallpaper" && isOpen) return 360;
+		if (bloomMode === "wallpaper" && isOpen) return 380;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 350;
 		if (showMusicOnStatusHover) {
 			return 170 + (settingsVisualizerEnabled ? 30 : 0);
@@ -2847,7 +2846,7 @@ function App() {
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
 		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
-		if (bloomMode === "wallpaper") return isOpen ? 205 : 36;
+		if (bloomMode === "wallpaper") return isOpen ? 230 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
@@ -3949,64 +3948,34 @@ function App() {
 											exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } }}
 											transition={{ type: "spring", stiffness: 400, damping: 30 }}
 										>
-											<div className="wallpaper-header">
-												<div className="wallpaper-header-top">
-													<span className="wallpaper-title" title={wallpaperFolder || undefined}>
-														<ImageIcon size={13} strokeWidth={2} />
-														Wallpaper
-													</span>
-													<div className="wallpaper-actions">
-														{!wallpapersLoading && wallpapers.length > 0 && (
-															<span className="wallpaper-count">{wallpapers.length}</span>
-														)}
-														<button
-															type="button"
-															className="wallpaper-action"
-															aria-label="Choose folder"
-															title="Choose folder"
-															onClick={(e) => {
-																e.stopPropagation();
-																chooseWallpaperFolder();
-															}}
-														>
-															<FolderOpen size={13} strokeWidth={2} />
-														</button>
-														<button
-															type="button"
-															className="wallpaper-action"
-															aria-label="Refresh wallpapers"
-															title="Refresh"
-															onClick={(e) => {
-																e.stopPropagation();
-																loadWallpapers();
-															}}
-														>
-															<RotateCcw size={13} strokeWidth={2} />
-														</button>
-													</div>
-												</div>
-												{wallpaperFolder && (
-													<span className="wallpaper-folder" title={wallpaperFolder}>
-														Add images to: {wallpaperFolder}
-													</span>
-												)}
-											</div>
+											<button
+												type="button"
+												className="wallpaper-folder-btn"
+												aria-label="Choose folder"
+												title="Choose folder"
+												onClick={(e) => {
+													e.stopPropagation();
+													chooseWallpaperFolder();
+												}}
+											>
+												<FolderOpen size={15} strokeWidth={2} />
+											</button>
 											{wallpapersLoading ? (
 												<div className="wallpaper-empty">Scanning wallpapers…</div>
 											) : wallpapers.length === 0 ? (
-												<div className="wallpaper-empty">No wallpapers yet — add images to the folder above</div>
+												<div className="wallpaper-empty">No wallpapers yet — tap the folder icon to choose one</div>
 											) : (
 												<div className="wallpaper-viewport">
 													<button
 														type="button"
-														className="wallpaper-page"
+														className="wallpaper-page prev"
 														aria-label="Previous wallpapers"
 														onClick={(e) => {
 															e.stopPropagation();
 															scrollWallpaper(-1);
 														}}
 													>
-														<ChevronLeft size={16} strokeWidth={2.2} />
+														<ChevronLeft size={18} strokeWidth={2.2} />
 													</button>
 													<div
 														className="wallpaper-strip"
@@ -4032,14 +4001,14 @@ function App() {
 													</div>
 													<button
 														type="button"
-														className="wallpaper-page"
+														className="wallpaper-page next"
 														aria-label="Next wallpapers"
 														onClick={(e) => {
 															e.stopPropagation();
 															scrollWallpaper(1);
 														}}
 													>
-														<ChevronRight size={16} strokeWidth={2.2} />
+														<ChevronRight size={18} strokeWidth={2.2} />
 													</button>
 												</div>
 											)}
