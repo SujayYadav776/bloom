@@ -2528,6 +2528,36 @@ img {
 	padding: 1px 7px;
 }
 
+.wallpaper-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wallpaper-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid var(--bloom-border, rgba(255, 255, 255, 0.12));
+	border-radius: 6px;
+	background: var(--bloom-group-bg, rgba(255, 255, 255, 0.04));
+	color: var(--bloom-text-muted, rgba(255, 255, 255, 0.7));
+	cursor: pointer;
+	transition:
+		color 0.12s ease,
+		border-color 0.12s ease,
+		background 0.12s ease;
+}
+
+.wallpaper-action:hover {
+	color: var(--bloom-text, #fff);
+	border-color: var(--bloom-accent, #0a84ff);
+	background: var(--bloom-group-bg, rgba(255, 255, 255, 0.1));
+}
+
 .wallpaper-viewport {
 	display: flex;
 	flex: 1;

@@ -34,6 +34,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 - [x] Source is a single dedicated user folder — default `%USERPROFILE%\Pictures\Bloom Wallpapers`, created on demand, overridable via the `bloom-wallpaper-folder` setting (no longer scans the Windows default locations); its path is shown in the panel header so you know where to drop your own images
 - [x] Base64 JPEG thumbnails rendered under the existing CSP (no asset-protocol/CSP/capability changes; no new Cargo deps — `image`/`base64` already present)
 - [x] Reworked to a single horizontal scrolling thumbnail strip with explicit prev/next page buttons; wheel over the strip scrolls horizontally (stopPropagation so it doesn't cycle panels); count badge; larger 16:9 tiles; stronger active ring
+- [x] Header actions: "Choose folder" (native directory picker → saves `bloom-wallpaper-folder` and rescans) and "Refresh" (rescans the folder without restarting the app)
 - [x] `tsc && vite build` typecheck passes
 
 ## Build & ship

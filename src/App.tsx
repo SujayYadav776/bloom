@@ -32,6 +32,7 @@ import { useAnnouncement } from "./hooks/useAnnouncement";
 import { reloadIfMirrorWasStale } from "./hooks/settingsMirror";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import type { WidgetConfig } from "./components/StatusWidgetConfig";
 import { EdgeSurface } from "./components/EdgeSurface";
@@ -55,7 +56,8 @@ import {
 	Inbox,
 	Music,
 	StickyNote,
-	Image as ImageIcon
+	Image as ImageIcon,
+	FolderOpen
 } from "lucide-react";
 
 /**
@@ -1821,9 +1823,7 @@ function App() {
 	const [wallpaperFolder, setWallpaperFolder] = useState("");
 	const wallpapersLoadedRef = useRef(false);
 
-	useEffect(() => {
-		if (bloomMode !== "wallpaper" || wallpapersLoadedRef.current) return;
-		wallpapersLoadedRef.current = true;
+	const loadWallpapers = useCallback(() => {
 		setWallpapersLoading(true);
 		invoke<WallpaperItem[]>("get_wallpaper_thumbnails")
 			.then((list) => setWallpapers(list ?? []))
@@ -1835,7 +1835,29 @@ function App() {
 		invoke<string>("get_wallpaper_folder")
 			.then((p) => setWallpaperFolder(p ?? ""))
 			.catch(() => {});
-	}, [bloomMode]);
+	}, []);
+
+	useEffect(() => {
+		if (bloomMode !== "wallpaper" || wallpapersLoadedRef.current) return;
+		wallpapersLoadedRef.current = true;
+		loadWallpapers();
+	}, [bloomMode, loadWallpapers]);
+
+	const chooseWallpaperFolder = async () => {
+		try {
+			const dir = await openDialog({
+				directory: true,
+				title: "Choose your wallpapers folder",
+				defaultPath: wallpaperFolder || undefined
+			});
+			if (typeof dir !== "string" || !dir) return;
+			await invoke("save_setting", { key: "bloom-wallpaper-folder", value: dir });
+			setWallpaperFolder(dir);
+			loadWallpapers();
+		} catch (e) {
+			console.warn("chooseWallpaperFolder:", e);
+		}
+	};
 
 	const applyWallpaper = (path: string) => {
 		invoke("set_wallpaper", { path })
@@ -3933,9 +3955,35 @@ function App() {
 														<ImageIcon size={13} strokeWidth={2} />
 														Wallpaper
 													</span>
-													{!wallpapersLoading && wallpapers.length > 0 && (
-														<span className="wallpaper-count">{wallpapers.length}</span>
-													)}
+													<div className="wallpaper-actions">
+														{!wallpapersLoading && wallpapers.length > 0 && (
+															<span className="wallpaper-count">{wallpapers.length}</span>
+														)}
+														<button
+															type="button"
+															className="wallpaper-action"
+															aria-label="Choose folder"
+															title="Choose folder"
+															onClick={(e) => {
+																e.stopPropagation();
+																chooseWallpaperFolder();
+															}}
+														>
+															<FolderOpen size={13} strokeWidth={2} />
+														</button>
+														<button
+															type="button"
+															className="wallpaper-action"
+															aria-label="Refresh wallpapers"
+															title="Refresh"
+															onClick={(e) => {
+																e.stopPropagation();
+																loadWallpapers();
+															}}
+														>
+															<RotateCcw size={13} strokeWidth={2} />
+														</button>
+													</div>
 												</div>
 												{wallpaperFolder && (
 													<span className="wallpaper-folder" title={wallpaperFolder}>
