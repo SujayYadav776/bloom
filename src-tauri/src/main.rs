@@ -197,6 +197,7 @@ fn main() {
             wallpaper::get_wallpaper_thumbnails,
             wallpaper::set_wallpaper,
             wallpaper::get_current_wallpaper,
+            wallpaper::get_wallpaper_folder,
             export_settings_to_file,
             import_settings_from_file,
             reset_settings,

@@ -46,37 +46,31 @@ fn name_from_path(path: &Path) -> String {
 		.to_string()
 }
 
-/// Collect candidate wallpaper files from the standard Windows locations plus an
-/// optional user folder (setting `bloom-wallpaper-folder`). Bounded by depth and
-/// total count so the panel stays responsive.
-fn collect_wallpapers(app: &AppHandle) -> Vec<PathBuf> {
-	let mut roots: Vec<PathBuf> = Vec::new();
-
-	let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".into());
-	roots.push(PathBuf::from(&system_root).join("Web").join("Wallpapers"));
-	roots.push(PathBuf::from(&system_root).join("Web").join("Screen"));
-
-	if let Ok(profile) = std::env::var("USERPROFILE") {
-		roots.push(PathBuf::from(profile).join("Pictures"));
-	}
-	if let Ok(public) = std::env::var("PUBLIC") {
-		roots.push(PathBuf::from(public).join("Pictures"));
-	}
+/// The folder the Wallpaper panel reads from. Defaults to
+/// `%USERPROFILE%\Pictures\Bloom Wallpapers` and can be overridden by the
+/// `bloom-wallpaper-folder` setting. Created on demand so the user always has a
+/// dedicated place to drop their own wallpapers.
+pub fn wallpaper_dir(app: &AppHandle) -> PathBuf {
 	if let Some(custom) = crate::utils::get_setting_str(app, "bloom-wallpaper-folder") {
-		if !custom.trim().is_empty() {
-			roots.push(PathBuf::from(custom.trim()));
+		let trimmed = custom.trim();
+		if !trimmed.is_empty() {
+			return PathBuf::from(trimmed);
 		}
 	}
+	let profile = std::env::var("USERPROFILE").unwrap_or_else(|_| ".".into());
+	PathBuf::from(profile).join("Pictures").join("Bloom Wallpapers")
+}
+
+/// Collect wallpaper image files from the dedicated Bloom wallpapers folder
+/// (created on demand). Bounded by depth and total count so the panel stays
+/// responsive.
+fn collect_wallpapers(app: &AppHandle) -> Vec<PathBuf> {
+	let dir = wallpaper_dir(app);
+	let _ = std::fs::create_dir_all(&dir);
 
 	let mut out: Vec<PathBuf> = Vec::new();
 	let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
-
-	for root in roots {
-		if out.len() >= MAX_RESULTS {
-			break;
-		}
-		walk(&root, 0, &mut out, &mut seen);
-	}
+	walk(&dir, 0, &mut out, &mut seen);
 	out
 }
 
@@ -178,4 +172,9 @@ pub fn get_current_wallpaper() -> Option<String> {
 	} else {
 		Some(path)
 	}
+}
+
+#[tauri::command]
+pub fn get_wallpaper_folder(app: AppHandle) -> String {
+	wallpaper_dir(&app).to_string_lossy().to_string()
 }

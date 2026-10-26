@@ -1811,13 +1811,14 @@ function App() {
 		localStorage.setItem("bloom-scratchpad", value);
 	};
 
-	// Wallpaper panel: lazily scans several Windows locations for thumbnails and
-	// lets the user set the desktop wallpaper. Thumbnails come back as base64
-	// data URLs so they render under the existing CSP.
+	// Wallpaper panel: scans a dedicated user folder (created on demand) for
+	// thumbnails and lets the user set the desktop wallpaper. Thumbnails come
+	// back as base64 data URLs so they render under the existing CSP.
 	type WallpaperItem = { name: string; path: string; dataUrl: string };
 	const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
 	const [wallpapersLoading, setWallpapersLoading] = useState(false);
 	const [currentWallpaper, setCurrentWallpaper] = useState("");
+	const [wallpaperFolder, setWallpaperFolder] = useState("");
 	const wallpapersLoadedRef = useRef(false);
 
 	useEffect(() => {
@@ -1830,6 +1831,9 @@ function App() {
 			.finally(() => setWallpapersLoading(false));
 		invoke<string | null>("get_current_wallpaper")
 			.then((p) => setCurrentWallpaper(p ?? ""))
+			.catch(() => {});
+		invoke<string>("get_wallpaper_folder")
+			.then((p) => setWallpaperFolder(p ?? ""))
 			.catch(() => {});
 	}, [bloomMode]);
 
@@ -2821,7 +2825,7 @@ function App() {
 		}
 		if (bloomMode === "command-center") return isOpen ? 230 : 36;
 		if (bloomMode === "scratchpad") return isOpen ? 210 : 36;
-		if (bloomMode === "wallpaper") return isOpen ? 190 : 36;
+		if (bloomMode === "wallpaper") return isOpen ? 205 : 36;
 		if (bloomMode === "wifi" || bloomMode === "bluetooth") return 300;
 		if (bloomMode === "status") return 36;
 		if (isMusicMode && isOpen) {
@@ -3924,18 +3928,25 @@ function App() {
 											transition={{ type: "spring", stiffness: 400, damping: 30 }}
 										>
 											<div className="wallpaper-header">
-												<span className="wallpaper-title">
-													<ImageIcon size={13} strokeWidth={2} />
-													Wallpaper
-												</span>
-												{!wallpapersLoading && wallpapers.length > 0 && (
-													<span className="wallpaper-count">{wallpapers.length}</span>
+												<div className="wallpaper-header-top">
+													<span className="wallpaper-title" title={wallpaperFolder || undefined}>
+														<ImageIcon size={13} strokeWidth={2} />
+														Wallpaper
+													</span>
+													{!wallpapersLoading && wallpapers.length > 0 && (
+														<span className="wallpaper-count">{wallpapers.length}</span>
+													)}
+												</div>
+												{wallpaperFolder && (
+													<span className="wallpaper-folder" title={wallpaperFolder}>
+														Add images to: {wallpaperFolder}
+													</span>
 												)}
 											</div>
 											{wallpapersLoading ? (
 												<div className="wallpaper-empty">Scanning wallpapers…</div>
 											) : wallpapers.length === 0 ? (
-												<div className="wallpaper-empty">No wallpapers found</div>
+												<div className="wallpaper-empty">No wallpapers yet — add images to the folder above</div>
 											) : (
 												<div className="wallpaper-viewport">
 													<button

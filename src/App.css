@@ -2479,8 +2479,24 @@ img {
 
 .wallpaper-header {
 	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.wallpaper-header-top {
+	display: flex;
 	align-items: center;
 	justify-content: space-between;
+}
+
+.wallpaper-folder {
+	display: block;
+	font-size: 10px;
+	color: var(--bloom-text-muted, rgba(255, 255, 255, 0.55));
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
 }
 
 .wallpaper-title {

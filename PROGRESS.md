@@ -30,9 +30,10 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 > Replaced the short-lived System Monitor panel (reverted) at the user's request.
 
 - [x] Register `wallpaper` as a cycleable `NotchPanel` + `BloomMode`
-- [x] Rust `src-tauri/src/wallpaper.rs`: `get_wallpaper_thumbnails` (scans Windows `Web\Wallpapers`/`Web\Screen`, user + public Pictures, optional `bloom-wallpaper-folder`), `set_wallpaper` (SystemParametersInfoW), `get_current_wallpaper`
+- [x] Rust `src-tauri/src/wallpaper.rs`: `set_wallpaper` (SystemParametersInfoW), `get_current_wallpaper`, `get_wallpaper_thumbnails`, `get_wallpaper_folder`
+- [x] Source is a single dedicated user folder — default `%USERPROFILE%\Pictures\Bloom Wallpapers`, created on demand, overridable via the `bloom-wallpaper-folder` setting (no longer scans the Windows default locations); its path is shown in the panel header so you know where to drop your own images
 - [x] Base64 JPEG thumbnails rendered under the existing CSP (no asset-protocol/CSP/capability changes; no new Cargo deps — `image`/`base64` already present)
-- [x] Reworked to a single horizontal scrolling thumbnail strip with explicit prev/next page buttons; wheel over the strip scrolls horizontally (stopPropagation so it doesn't cycle panels); count badge; larger 16:9 tiles; stronger active ring; shorter fixed panel height
+- [x] Reworked to a single horizontal scrolling thumbnail strip with explicit prev/next page buttons; wheel over the strip scrolls horizontally (stopPropagation so it doesn't cycle panels); count badge; larger 16:9 tiles; stronger active ring
 - [x] `tsc && vite build` typecheck passes
 
 ## Build & ship
