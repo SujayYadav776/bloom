@@ -149,6 +149,7 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
             .as_ref()
             .and_then(|data| unsafe { ShelfDropTarget::extract(data) });
         let Some(payload) = payload else {
+            crate::diagnostics::record("shelf_drop", "DragEnter rejected (no files/text)");
             unsafe {
                 *self.enter_valid.get() = false;
                 *self.cursor_effect.get() = DROPEFFECT_NONE;
@@ -166,6 +167,10 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
         let point = unsafe { self.client_point(pt) };
         match payload {
             DragPayload::Files(paths, hdrop) => {
+                crate::diagnostics::record(
+                    "shelf_drop",
+                    &format!("DragEnter files={}", paths.len()),
+                );
                 let _ = self.app.emit(
                     "shelf-drag-enter",
                     serde_json::json!({ "paths": paths, "position": { "x": point.x, "y": point.y } }),
@@ -173,6 +178,7 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
                 unsafe { DragFinish(hdrop) };
             }
             DragPayload::Text(text) => {
+                crate::diagnostics::record("shelf_drop", "DragEnter text");
                 let _ = self.app.emit(
                     "shelf-drag-enter",
                     serde_json::json!({ "text": text, "position": { "x": point.x, "y": point.y } }),
@@ -214,18 +220,25 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
                 .and_then(|data| unsafe { ShelfDropTarget::extract(data) });
             match payload {
                 Some(DragPayload::Files(paths, hdrop)) => {
+                    crate::diagnostics::record(
+                        "shelf_drop",
+                        &format!("Drop files={}", paths.len()),
+                    );
                     let _ = self
                         .app
                         .emit("shelf-drag-drop", serde_json::json!({ "paths": paths }));
                     unsafe { DragFinish(hdrop) };
                 }
                 Some(DragPayload::Text(text)) => {
+                    crate::diagnostics::record("shelf_drop", "Drop text");
                     let _ = self
                         .app
                         .emit("shelf-drag-drop", serde_json::json!({ "text": text }));
                 }
                 None => {}
             }
+        } else {
+            crate::diagnostics::record("shelf_drop", "Drop ignored (not entered)");
         }
         Ok(())
     }
@@ -264,6 +277,8 @@ pub fn setup(app: &AppHandle) {
             Some(child_proc),
             LPARAM(&mut ctx as *mut Ctx as isize),
         );
+        let registered = ctx.targets.len();
+        crate::diagnostics::record("shelf_drop", &format!("registered targets={registered}"));
         if let Ok(mut guard) = SHELF_DROP_TARGETS.lock() {
             *guard = Some(TargetStore(ctx.targets));
         }
