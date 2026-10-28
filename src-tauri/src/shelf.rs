@@ -8,6 +8,7 @@
 //! the toplevel and every current descendant, after the webview has painted.
 
 use std::cell::UnsafeCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use tauri::{AppHandle, Emitter, Manager};
@@ -37,6 +38,17 @@ struct TargetStore(#[allow(dead_code)] Vec<IDropTarget>);
 unsafe impl Send for TargetStore {}
 
 static SHELF_DROP_TARGETS: Mutex<Option<TargetStore>> = Mutex::new(None);
+
+/// Set while an external drag is in flight over the notch, so the freshness
+/// watchdog never revokes a target out from under an active drop.
+static SHELF_DRAG_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+/// The sorted set of HWNDs the drop target is currently registered on. Compared
+/// against the live child windows to detect a WebView2 rebuild.
+static SHELF_REGISTERED: Mutex<Option<Vec<isize>>> = Mutex::new(None);
+
+/// Guards starting the freshness watchdog exactly once.
+static WATCHDOG_STARTED: AtomicBool = AtomicBool::new(false);
 
 /// What a drag carries that we accept.
 enum DragPayload {
@@ -145,6 +157,9 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
         pt: &POINTL,
         effect: *mut DROPEFFECT,
     ) -> windows::core::Result<()> {
+        // A drag is live over the notch; hold off the freshness watchdog until
+        // it resolves so we never revoke a target mid-drag.
+        SHELF_DRAG_ACTIVE.store(true, Ordering::Relaxed);
         let payload = pdata
             .as_ref()
             .and_then(|data| unsafe { ShelfDropTarget::extract(data) });
@@ -199,6 +214,7 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
     }
 
     fn DragLeave(&self) -> windows::core::Result<()> {
+        SHELF_DRAG_ACTIVE.store(false, Ordering::Relaxed);
         if unsafe { *self.enter_valid.get() } {
             unsafe { *self.enter_valid.get() = false };
             let _ = self.app.emit("shelf-drag-leave", ());
@@ -213,6 +229,7 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
         _pt: &POINTL,
         _effect: *mut DROPEFFECT,
     ) -> windows::core::Result<()> {
+        SHELF_DRAG_ACTIVE.store(false, Ordering::Relaxed);
         if unsafe { *self.enter_valid.get() } {
             unsafe { *self.enter_valid.get() = false };
             let payload = pdata
@@ -246,6 +263,8 @@ impl IDropTarget_Impl for ShelfDropTarget_Impl {
 
 /// (Re)registers the shelf drop target on the main window and all its current
 /// descendants. Safe to call repeatedly; existing registrations are replaced.
+/// Also records the set of windows it registered so the freshness watchdog can
+/// tell when WebView2 has rebuilt the child windows underneath us.
 pub fn setup(app: &AppHandle) {
     let Some(win) = app.get_webview_window("main") else {
         return;
@@ -257,11 +276,12 @@ pub fn setup(app: &AppHandle) {
     struct Ctx {
         app: AppHandle,
         targets: Vec<IDropTarget>,
+        hwnds: Vec<isize>,
     }
 
     unsafe extern "system" fn child_proc(child: HWND, lparam: LPARAM) -> BOOL {
         let ctx = &mut *(lparam.0 as *mut Ctx);
-        unsafe { inject(child, &ctx.app, &mut ctx.targets) };
+        unsafe { inject(&ctx.app, child, &mut ctx.targets, &mut ctx.hwnds) };
         BOOL(1)
     }
 
@@ -270,8 +290,9 @@ pub fn setup(app: &AppHandle) {
         let mut ctx = Ctx {
             app: app.clone(),
             targets: Vec::new(),
+            hwnds: Vec::new(),
         };
-        inject(hwnd, app, &mut ctx.targets);
+        inject(app, hwnd, &mut ctx.targets, &mut ctx.hwnds);
         let _ = EnumChildWindows(
             Some(hwnd),
             Some(child_proc),
@@ -279,13 +300,25 @@ pub fn setup(app: &AppHandle) {
         );
         let registered = ctx.targets.len();
         crate::diagnostics::record("shelf_drop", &format!("registered targets={registered}"));
+        let mut hwnds = ctx.hwnds.clone();
+        hwnds.sort_unstable();
+        if let Ok(mut guard) = SHELF_REGISTERED.lock() {
+            *guard = Some(hwnds);
+        }
         if let Ok(mut guard) = SHELF_DROP_TARGETS.lock() {
             *guard = Some(TargetStore(ctx.targets));
         }
     }
+
+    start_watchdog(app);
 }
 
-unsafe fn inject(hwnd: HWND, app: &AppHandle, out: &mut Vec<IDropTarget>) {
+unsafe fn inject(
+    app: &AppHandle,
+    hwnd: HWND,
+    targets: &mut Vec<IDropTarget>,
+    hwnds: &mut Vec<isize>,
+) {
     let target: IDropTarget = ShelfDropTarget {
         app: app.clone(),
         hwnd,
@@ -295,6 +328,66 @@ unsafe fn inject(hwnd: HWND, app: &AppHandle, out: &mut Vec<IDropTarget>) {
     .into();
     let _ = unsafe { RevokeDragDrop(hwnd) };
     if unsafe { RegisterDragDrop(hwnd, &target) }.is_ok() {
-        out.push(target);
+        targets.push(target);
+        hwnds.push(hwnd.0 as isize);
     }
+}
+
+/// The main window plus every current descendant HWND, sorted. Compared against
+/// the registered set to detect that WebView2 tore down and rebuilt the child
+/// windows the drop target lives on.
+fn live_target_hwnds(app: &AppHandle) -> Option<Vec<isize>> {
+    let win = app.get_webview_window("main")?;
+    let hwnd = win.hwnd().ok()?;
+    let mut list: Vec<isize> = vec![hwnd.0 as isize];
+
+    unsafe extern "system" fn collect(child: HWND, lparam: LPARAM) -> BOOL {
+        let list = &mut *(lparam.0 as *mut Vec<isize>);
+        list.push(child.0 as isize);
+        BOOL(1)
+    }
+
+    unsafe {
+        let _ = EnumChildWindows(
+            Some(hwnd),
+            Some(collect),
+            LPARAM(&mut list as *mut Vec<isize> as isize),
+        );
+    }
+    list.sort_unstable();
+    Some(list)
+}
+
+/// Re-registers the drop target only when the live child windows differ from
+/// the set we last registered on. Skipped while a drag is in flight so an
+/// active drop is never interrupted by a revoke/re-register cycle.
+pub fn ensure_fresh(app: &AppHandle) {
+    if SHELF_DRAG_ACTIVE.load(Ordering::Relaxed) {
+        return;
+    }
+    let Some(live) = live_target_hwnds(app) else {
+        return;
+    };
+    let registered = SHELF_REGISTERED.lock().ok().and_then(|g| g.clone());
+    if registered.as_deref() == Some(live.as_slice()) {
+        return;
+    }
+    crate::diagnostics::record("shelf_drop", "child windows changed, re-registering");
+    setup(app);
+}
+
+/// Periodic freshness check. WebView2 recreates its render child on sleep/wake,
+/// DPI changes, and webview reloads; without this the target silently goes
+/// stale on a long-running notch and drops stop landing. Started once, on the
+/// first setup, and always marshalled onto the window's own (main) thread.
+fn start_watchdog(app: &AppHandle) {
+    if WATCHDOG_STARTED.swap(true, Ordering::Relaxed) {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || ensure_fresh(&handle));
+    });
 }

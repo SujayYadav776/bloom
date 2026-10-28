@@ -36,6 +36,20 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` planned
 - [x] Header actions: "Choose folder" (native directory picker → saves `bloom-wallpaper-folder` and rescans) and "Refresh" (rescans the folder without restarting the app)
 - [x] `tsc && vite build` typecheck passes
 
+## Fix: Shelf drag-and-drop reliability
+
+> Root cause of "can't drag a file onto the notch": not a code bug and not an
+> elevation/UIPI problem. The OLE drop target is registered on the notch's
+> WebView2 child windows, and those get torn down and rebuilt over time
+> (sleep/wake, DPI change, webview reload). `setup_shelf_drop` only re-registered
+> at startup + 1.5s, so a long-running notch silently stopped receiving drops.
+> A fresh launch re-registered on the live child windows and worked flawlessly.
+
+- [x] Instrumented the drop path (`registered targets=N`, `DragEnter`, `Drop`) in `diagnostics.log`; a real drag confirmed the full flow (targets=6 → DragEnter files=1 → Drop files=1)
+- [x] Added a freshness watchdog in `shelf.rs`: a background poll (every 4s, marshalled onto the main thread) re-registers the drop target whenever the live child-window set differs from the set we registered on
+- [x] Watchdog holds off while a drag is in flight (`SHELF_DRAG_ACTIVE`) so an active drop is never interrupted by a revoke/re-register cycle
+- [x] `cargo check` passes
+
 ## Build & ship
 
 - [x] Dependencies installed faithfully via `bun install --frozen-lockfile` (matches `Cargo.lock`)
